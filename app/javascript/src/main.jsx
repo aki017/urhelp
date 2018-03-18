@@ -17,7 +17,17 @@ class Main extends React.Component {
       }
 
     }
+
+    let params = new URLSearchParams(location.search.slice(1));
+    if(params.has("a")){
+      this.state.right_id = params.get("a");
+    }
+    if(params.has("b")){
+      this.state.left_id = params.get("b");
+    }
     this.loadBuilds();
+    this.loadArtifacts("left", this.state.left_id);
+    this.loadArtifacts("right", this.state.right_id);
   }
 
   loadBuilds() {
@@ -27,10 +37,13 @@ class Main extends React.Component {
   }
 
   loadArtifacts(t, id) {
-    this.setState({[t +"_id"]: id});
     fetch(`/builds/${id}`, {credentials: "same-origin"})
       .then((r)=> r.json())
       .then((json)=> this.setState({[t]: json}))
+  }
+  setBuild(t, id) {
+    this.setState({[t +"_id"]: id});
+    this.loadArtifacts(t,id);
   }
 
   listTargets() {
@@ -48,12 +61,11 @@ class Main extends React.Component {
   renderBuildSelector(t) {
     return <FormControl
       componentClass="select"
-      onChange={(e)=>this.loadArtifacts(t, e.target.value)}
+      onChange={(e)=>this.setBuild(t, e.target.value)}
       value={this.state[t+"_id"]}>
       {this.state.builds
-        .map(b => b.build_num)
-        .map((t)=> <option key={t} value={t}>
-          {t}
+        .map((t)=> <option key={t.build_num} value={t.build_num}>
+          {t.build_num}: |{t.branch}| {t.subject} [{t.vcs_revision.substr(0,6)}] @{t.committer_name}
         </option>)}
       <option value={-1}>-1</option>
     </FormControl>
@@ -73,7 +85,7 @@ class Main extends React.Component {
         <Row>
           <Col md={6}>
             <ul>
-              {this.state.left.artifacts.map(a => <li>
+              {this.state.left.artifacts.map(a => <li key={a.path}>
                 {a.path}
               </li>)}
             </ul>
